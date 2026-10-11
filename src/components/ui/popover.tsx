@@ -4,12 +4,6 @@ import * as React from "react"
 import { cn } from "cn"
 import { Popover as PopoverPrimitive } from "radix-ui"
 
-const Popover = ({
-  ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) => {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
-}
-
 const PopoverTrigger = ({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) => {
@@ -74,6 +68,80 @@ const PopoverDescription = ({
       className={cn("text-muted-foreground", className)}
       {...props}
     />
+  )
+}
+
+type PopoverProps = Omit<
+  React.ComponentProps<typeof PopoverPrimitive.Root>,
+  "children"
+> &
+  (
+    | {
+        trigger: React.ReactElement
+        content: React.ReactNode
+        contentProps?: Omit<
+          React.ComponentProps<typeof PopoverContent>,
+          "children"
+        >
+        children?: never
+      }
+    | {
+        trigger?: never
+        content?: never
+        contentProps?: never
+        children?: React.ReactNode
+      }
+  )
+
+const Popover = ({
+  trigger,
+  content,
+  contentProps,
+  children,
+  open: controlledOpen,
+  defaultOpen,
+  onOpenChange,
+  ...props
+}: PopoverProps) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(
+    defaultOpen ?? false
+  )
+  const open = controlledOpen ?? uncontrolledOpen
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (controlledOpen === undefined) setUncontrolledOpen(nextOpen)
+      onOpenChange?.(nextOpen)
+    },
+    [controlledOpen, onOpenChange]
+  )
+
+  React.useEffect(() => {
+    if (!open) return
+
+    const closeOnResize = () => handleOpenChange(false)
+    window.addEventListener("resize", closeOnResize)
+    return () => window.removeEventListener("resize", closeOnResize)
+  }, [handleOpenChange, open])
+
+  const composedContent = trigger ? (
+    <>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent {...contentProps}>{content}</PopoverContent>
+    </>
+  ) : (
+    children
+  )
+
+  return (
+    <PopoverPrimitive.Root
+      data-slot="popover"
+      open={open}
+      onOpenChange={handleOpenChange}
+      {...props}
+    >
+      {composedContent}
+    </PopoverPrimitive.Root>
   )
 }
 

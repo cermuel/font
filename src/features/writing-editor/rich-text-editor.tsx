@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Form
 import { EDITOR_FONT_SIZES } from "@/features/font-builder/constants";
 import type { EditorFontSize } from "@/features/font-builder/types";
 import { RichTextToolbar, type RichCommand } from "./rich-text-toolbar";
+import { applyFontSizeToSelectedBlocks } from "./selection-formatting";
 
 type RichTextEditorProps = {
   value: string;
   style: CSSProperties;
   fontSize: EditorFontSize;
+  onFontSizeChange: (fontSize: EditorFontSize) => void;
   onValueChange: (value: string) => void;
 };
 
@@ -28,20 +30,20 @@ export const RichTextEditor = ({
   value,
   style,
   fontSize,
+  onFontSizeChange,
   onValueChange,
 }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef<Range | null>(null);
   const [activeFormats, setActiveFormats] = useState(emptyFormats);
-  const [activeFontSize, setActiveFontSize] = useState(fontSize);
-  const [hasTextSelection, setHasTextSelection] = useState(false);
+  const [selectionFontSize, setSelectionFontSize] =
+    useState<EditorFontSize | null>(null);
 
   const syncFormats = useCallback(() => {
     const selection = window.getSelection();
     if (!selection?.anchorNode || !editorRef.current?.contains(selection.anchorNode)) return;
     const range = selection.rangeCount ? selection.getRangeAt(0) : null;
     selectionRef.current = range?.cloneRange() ?? null;
-    setHasTextSelection(Boolean(range && !range.collapsed));
 
     const anchor = selection.anchorNode instanceof Element
       ? selection.anchorNode
@@ -49,7 +51,7 @@ export const RichTextEditor = ({
     if (anchor) {
       const computedSize = Math.round(Number.parseFloat(window.getComputedStyle(anchor).fontSize));
       if (EDITOR_FONT_SIZES.includes(computedSize as EditorFontSize)) {
-        setActiveFontSize(computedSize as EditorFontSize);
+        setSelectionFontSize(computedSize as EditorFontSize);
       }
     }
     setActiveFormats({
@@ -89,26 +91,24 @@ export const RichTextEditor = ({
   const applyFontSize = (nextSize: EditorFontSize) => {
     const editor = editorRef.current;
     const range = selectionRef.current;
-    if (!editor || !range || range.collapsed || !editor.contains(range.commonAncestorContainer)) return;
+    const hasSelection = Boolean(
+      editor &&
+      range &&
+      !range.collapsed &&
+      editor.contains(range.commonAncestorContainer),
+    );
+
+    setSelectionFontSize(nextSize);
+    onFontSizeChange(nextSize);
+    if (!editor || !range || !hasSelection) {
+      editor?.focus();
+      return;
+    }
 
     const selection = window.getSelection();
     selection?.removeAllRanges();
     selection?.addRange(range);
-    const selectedListItems = [...editor.querySelectorAll("li")]
-      .filter((item) => range.intersectsNode(item));
-    document.execCommand("styleWithCSS", false, "false");
-    document.execCommand("fontSize", false, "7");
-    editor.querySelectorAll('font[size="7"]').forEach((font) => {
-      const span = document.createElement("span");
-      span.style.fontSize = `${nextSize}px`;
-      span.append(...font.childNodes);
-      font.replaceWith(span);
-    });
-    selectedListItems.forEach((item) => {
-      item.style.setProperty("--marker-font-size", `${nextSize}px`);
-    });
-    setActiveFontSize(nextSize);
-    setHasTextSelection(false);
+    if (!applyFontSizeToSelectedBlocks(editor, range, nextSize)) return;
     selectionRef.current = null;
     emitValue();
   };
@@ -122,8 +122,7 @@ export const RichTextEditor = ({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-card">
       <RichTextToolbar
         activeFormats={activeFormats}
-        fontSize={activeFontSize}
-        hasTextSelection={hasTextSelection}
+        fontSize={selectionFontSize ?? fontSize}
         onCommand={runCommand}
         onFontSizeChange={applyFontSize}
       />

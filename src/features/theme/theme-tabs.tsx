@@ -1,6 +1,11 @@
 "use client";
 
-import { Laptop, Moon, Sun, type LucideIcon } from "lucide-react";
+import {
+  ComputerIcon,
+  Moon02Icon,
+  Sun03Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/utils/helpers";
 import { useTheme, type Theme } from "./theme-provider";
@@ -8,11 +13,11 @@ import { useTheme, type Theme } from "./theme-provider";
 const themeOptions: readonly {
   value: Theme;
   label: string;
-  icon: LucideIcon;
+  icon: IconSvgElement;
 }[] = [
-  { value: "system", label: "System", icon: Laptop },
-  { value: "light", label: "Light", icon: Sun },
-  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: ComputerIcon },
+  { value: "light", label: "Light", icon: Sun03Icon },
+  { value: "dark", label: "Dark", icon: Moon02Icon },
 ];
 
 export const ThemeTabs = ({ className }: { className?: string }) => {
@@ -35,7 +40,12 @@ export const ThemeTabs = ({ className }: { className?: string }) => {
             aria-label={label}
             className="aspect-square gap-1.5 w-8! cursor-pointer outline-none! data-active:bg-muted"
           >
-            <Icon aria-hidden="true" className="size-3.5" strokeWidth={2} />
+            <HugeiconsIcon
+              aria-hidden="true"
+              icon={Icon}
+              className="size-3.5"
+              strokeWidth={2}
+            />
           </TabsTrigger>
         ))}
       </TabsList>

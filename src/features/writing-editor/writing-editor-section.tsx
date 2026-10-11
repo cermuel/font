@@ -1,17 +1,18 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import {
-  FALLBACK_FONT_STACK,
-  USER_FONT_FAMILY,
-} from "@/features/font-builder/constants";
-import type { EditorSettings } from "@/features/font-builder/types";
+import { FALLBACK_FONT_STACK } from "@/features/font-builder/constants";
+import type {
+  EditorFontSize,
+  EditorSettings,
+} from "@/features/font-builder/types";
 import { RichTextEditor } from "./rich-text-editor";
 
 type WritingEditorSectionProps = {
   value: string;
   settings: EditorSettings;
   fontFamily?: string;
+  onFontSizeChange: (fontSize: EditorFontSize) => void;
   onValueChange: (value: string) => void;
 };
 
@@ -19,13 +20,14 @@ export const WritingEditorSection = ({
   value,
   settings,
   fontFamily,
+  onFontSizeChange,
   onValueChange,
 }: WritingEditorSectionProps) => {
   const editorStyle: CSSProperties = {
     color: settings.color,
     backgroundColor: "var(--card)",
     fontFamily: fontFamily
-      ? `"${USER_FONT_FAMILY}", ${FALLBACK_FONT_STACK}`
+      ? `"${fontFamily}", ${FALLBACK_FONT_STACK}`
       : FALLBACK_FONT_STACK,
     fontSize: `${settings.fontSize}px`,
     letterSpacing: `${settings.letterSpacing}em`,
@@ -44,6 +46,7 @@ export const WritingEditorSection = ({
           value={value}
           style={editorStyle}
           fontSize={settings.fontSize}
+          onFontSizeChange={onFontSizeChange}
           onValueChange={onValueChange}
         />
       </div>

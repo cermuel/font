@@ -1,9 +1,10 @@
 "use client"
 
 import * as React from "react"
+import { ArrowDown01Icon, ArrowUp01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
+import { HugeiconsIcon } from "@hugeicons/react"
 import { cn } from "cn"
 import { Select as SelectPrimitive } from "radix-ui"
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
 const Select = ({
   ...props
@@ -50,7 +51,11 @@ const SelectTrigger = ({
     >
       {children}
       <SelectPrimitive.Icon asChild>
-        <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+        <HugeiconsIcon
+          aria-hidden="true"
+          icon={ArrowDown01Icon}
+          className="pointer-events-none size-4 text-muted-foreground"
+        />
       </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   )
@@ -118,7 +123,11 @@ const SelectItem = ({
     >
       <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="pointer-events-none" />
+          <HugeiconsIcon
+            aria-hidden="true"
+            icon={Tick02Icon}
+            className="pointer-events-none"
+          />
         </SelectPrimitive.ItemIndicator>
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
@@ -152,8 +161,7 @@ const SelectScrollUpButton = ({
       )}
       {...props}
     >
-      <ChevronUpIcon
-      />
+      <HugeiconsIcon aria-hidden="true" icon={ArrowUp01Icon} />
     </SelectPrimitive.ScrollUpButton>
   )
 }
@@ -171,8 +179,7 @@ const SelectScrollDownButton = ({
       )}
       {...props}
     >
-      <ChevronDownIcon
-      />
+      <HugeiconsIcon aria-hidden="true" icon={ArrowDown01Icon} />
     </SelectPrimitive.ScrollDownButton>
   )
 }

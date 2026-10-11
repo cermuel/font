@@ -19,6 +19,7 @@ export const FontBuilderWorkspace = () => {
   const [fontBuffer, setFontBuffer] = useState<ArrayBuffer>();
   const [hydrated, setHydrated] = useState(false);
   const fontFaceRef = useRef<FontFace | undefined>(undefined);
+  const fontRevisionRef = useRef(0);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -44,7 +45,8 @@ export const FontBuilderWorkspace = () => {
       }
 
       setFontBuffer(buffer);
-      const familyName = USER_FONT_FAMILY;
+      fontRevisionRef.current += 1;
+      const familyName = `${USER_FONT_FAMILY}-${fontRevisionRef.current}`;
       const fontFace = new FontFace(familyName, buffer);
       await fontFace.load();
       if (cancelled) return;
@@ -99,13 +101,13 @@ export const FontBuilderWorkspace = () => {
         Skip to content
       </a>
       <WorkspaceNavbar />
-      <main id="main-content" className="min-h-0 flex-1">
+      <main id="main-content" className="min-h-0 flex-1 overflow-hidden">
         <Tabs
           value={activeTab}
           onValueChange={(value) => {
             if (value === "build" || value === "write") setActiveTab(value);
           }}
-          className="h-full min-h-0 px-4 pt-20 sm:px-6"
+          className="h-full min-h-0 overflow-hidden px-4 pt-20 sm:px-6"
         >
           <TabsList
             variant="default"
@@ -122,6 +124,7 @@ export const FontBuilderWorkspace = () => {
           <TabsContent value="build" className="min-h-0 overflow-hidden">
             <GlyphEditorSection
               activeCharacter={activeCharacter}
+              fontFamily={fontFamily}
               glyphs={project.glyphs}
               onCharacterChange={setActiveCharacter}
               onStrokesChange={updateStrokes}
@@ -132,6 +135,11 @@ export const FontBuilderWorkspace = () => {
               value={project.writing}
               settings={project.editor}
               fontFamily={fontFamily}
+              onFontSizeChange={(fontSize) =>
+                updateProject({
+                  editor: { ...project.editor, fontSize },
+                })
+              }
               onValueChange={(writing) => updateProject({ writing })}
             />
           </TabsContent>

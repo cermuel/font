@@ -2,13 +2,11 @@
 
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { GLYPH_CANVAS_SIZE } from "@/features/font-builder/constants";
-import type { GlyphZone } from "@/features/font-builder/glyph-metrics";
 import type { Point, Stroke } from "@/features/font-builder/types";
 
 type GlyphCanvasProps = {
   character: string;
   strokes: readonly Stroke[];
-  zone: GlyphZone;
   onChange: (strokes: readonly Stroke[]) => void;
 };
 
@@ -33,7 +31,42 @@ const readThemeColor = (name: string, fallback: string) => {
   return value || fallback;
 };
 
-export const GlyphCanvas = ({ character, strokes, zone, onChange }: GlyphCanvasProps) => {
+const drawCharacterGuide = (
+  context: CanvasRenderingContext2D,
+  character: string,
+  color: string,
+) => {
+  const targetWidth = GLYPH_CANVAS_SIZE * 0.62;
+  const targetHeight = GLYPH_CANVAS_SIZE * 0.58;
+  const referenceSize = 100;
+  context.save();
+  context.textBaseline = "alphabetic";
+  context.font = `500 ${referenceSize}px Arial, sans-serif`;
+  const reference = context.measureText(character);
+  const referenceWidth = reference.actualBoundingBoxLeft + reference.actualBoundingBoxRight;
+  const referenceHeight =
+    reference.actualBoundingBoxAscent + reference.actualBoundingBoxDescent;
+  const scale = Math.min(
+    targetWidth / Math.max(referenceWidth, 1),
+    targetHeight / Math.max(referenceHeight, 1),
+  );
+  const fontSize = referenceSize * scale;
+  context.font = `500 ${fontSize}px Arial, sans-serif`;
+  const metrics = context.measureText(character);
+  const centerOffset =
+    (metrics.actualBoundingBoxRight - metrics.actualBoundingBoxLeft) / 2;
+  const x = GLYPH_CANVAS_SIZE / 2 - centerOffset;
+  const y =
+    GLYPH_CANVAS_SIZE / 2 +
+    (metrics.actualBoundingBoxAscent - metrics.actualBoundingBoxDescent) / 2;
+
+  context.fillStyle = color;
+  context.globalAlpha = 0.16;
+  context.fillText(character, x, y);
+  context.restore();
+};
+
+export const GlyphCanvas = ({ character, strokes, onChange }: GlyphCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [draft, setDraft] = useState<readonly Point[]>([]);
   const [themeRevision, setThemeRevision] = useState(0);
@@ -51,35 +84,12 @@ export const GlyphCanvas = ({ character, strokes, zone, onChange }: GlyphCanvasP
 
     context.clearRect(0, 0, GLYPH_CANVAS_SIZE, GLYPH_CANVAS_SIZE);
     const canvasBackground = readThemeColor("--card", "#ffffff");
-    const zoneBackground = readThemeColor("--muted", "#f1f5f9");
-    const guideColor = readThemeColor("--border", "#d4d4d4");
     const labelColor = readThemeColor("--muted-foreground", "#a3a3a3");
     const strokeColor = readThemeColor("--foreground", "#171717");
 
     context.fillStyle = canvasBackground;
     context.fillRect(0, 0, GLYPH_CANVAS_SIZE, GLYPH_CANVAS_SIZE);
-
-    context.fillStyle = zoneBackground;
-    context.fillRect(
-      0,
-      zone.top * GLYPH_CANVAS_SIZE,
-      GLYPH_CANVAS_SIZE,
-      (zone.bottom - zone.top) * GLYPH_CANVAS_SIZE,
-    );
-    context.strokeStyle = guideColor;
-    context.lineWidth = 2;
-    context.setLineDash([8, 10]);
-    [0.2, 0.3, 0.38, 0.8, 0.95].forEach((position) => {
-      context.beginPath();
-      context.moveTo(0, position * GLYPH_CANVAS_SIZE);
-      context.lineTo(GLYPH_CANVAS_SIZE, position * GLYPH_CANVAS_SIZE);
-      context.stroke();
-    });
-    context.setLineDash([]);
-
-    context.fillStyle = labelColor;
-    context.font = "600 30px Arial";
-    context.fillText(character, 24, 44);
+    drawCharacterGuide(context, character, labelColor);
 
     context.strokeStyle = strokeColor;
     context.lineWidth = 46;
@@ -87,7 +97,7 @@ export const GlyphCanvas = ({ character, strokes, zone, onChange }: GlyphCanvasP
     context.lineJoin = "round";
     strokes.forEach((stroke) => drawStroke(context, stroke.points));
     drawStroke(context, draft);
-  }, [character, draft, strokes, themeRevision, zone]);
+  }, [character, draft, strokes, themeRevision]);
 
   const getPoint = (event: PointerEvent<HTMLCanvasElement>): Point => {
     const bounds = event.currentTarget.getBoundingClientRect();
