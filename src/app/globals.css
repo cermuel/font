@@ -148,13 +148,7 @@
   }
   html,
   body {
-    block-size: 100dvh;
-    inline-size: 100dvw;
-    max-block-size: 100dvh;
-    max-inline-size: 100dvw;
-    overflow: hidden;
-    overflow-block: hidden;
-    overscroll-behavior: none;
+    min-block-size: 100%;
   }
 }
 

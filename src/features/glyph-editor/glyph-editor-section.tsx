@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  Delete02Icon,
-  Undo02Icon,
-} from "@hugeicons/core-free-icons";
+import { Delete02Icon, Undo02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@/components/ui/button";
 import { CHARACTERS } from "@/features/font-builder/constants";
@@ -58,7 +55,7 @@ export const GlyphEditorSection = ({
             onCharacterChange={onCharacterChange}
           />
 
-          <div className="flex min-h-0 flex-1 items-center justify-center bg-muted/30 p-2 [container-type:size] sm:p-4">
+          <div className="flex min-h-0 flex-1 items-center justify-center bg-muted/30 p-2 @container-size sm:p-4">
             <div className="size-[min(100cqw,100cqh)] max-w-lg overflow-hidden rounded-md border border-border/60 bg-background">
               <GlyphCanvas
                 character={activeCharacter}
@@ -80,7 +77,11 @@ export const GlyphEditorSection = ({
               className={actionButton}
               onClick={() => onStrokesChange(strokes.slice(0, -1))}
             >
-              <HugeiconsIcon aria-hidden="true" icon={Undo02Icon} className="size-4" />
+              <HugeiconsIcon
+                aria-hidden="true"
+                icon={Undo02Icon}
+                className="size-4"
+              />
               Undo
             </Button>
             <Button
@@ -90,7 +91,11 @@ export const GlyphEditorSection = ({
               className="h-9 gap-2 px-3 text-sm"
               onClick={() => onStrokesChange([])}
             >
-              <HugeiconsIcon aria-hidden="true" icon={Delete02Icon} className="size-4" />
+              <HugeiconsIcon
+                aria-hidden="true"
+                icon={Delete02Icon}
+                className="size-4"
+              />
               Clear
             </Button>
           </div>

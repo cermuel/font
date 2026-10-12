@@ -3,7 +3,7 @@ import { ThemeProvider } from "@/features/theme/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Font",
+  title: "Make My Font",
   description: "Draw your own typeface and use it to write.",
   icons: { icon: "/logo.png", apple: "/logo.png" },
 };
@@ -24,7 +24,7 @@ const RootLayout = ({ children }: LayoutProps<"/">) => {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="min-h-full">
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

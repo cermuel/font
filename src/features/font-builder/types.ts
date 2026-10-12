@@ -35,6 +35,32 @@ export type FontProject = Readonly<{
   updatedAt: string;
 }>;
 
+export type FontDocument = Readonly<{
+  version: 1;
+  glyphs: Readonly<Record<string, GlyphDraft>>;
+  editor: EditorSettings;
+  writing: string;
+}>;
+
+export type FontRecord = Readonly<{
+  id: string;
+  name: string;
+  document: FontDocument;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+}>;
+
+export type FontSummary = Readonly<{
+  id: string;
+  name: string;
+  completedGlyphs: number;
+  revision: number;
+  updatedAt: string;
+}>;
+
+export type CloudSaveStatus = "idle" | "saving" | "saved" | "offline" | "conflict";
+
 export type FontBuildStatus =
   | Readonly<{ state: "idle" }>
   | Readonly<{ state: "building" }>

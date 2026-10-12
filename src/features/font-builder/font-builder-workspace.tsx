@@ -11,9 +11,21 @@ import { buildFontBuffer } from "./font-engine";
 import { createProject, loadProject, saveProject } from "./project-storage";
 import type { FontProject, Stroke } from "./types";
 
-export const FontBuilderWorkspace = () => {
+type FontBuilderWorkspaceProps = {
+  initialProject?: FontProject;
+  localPersistence?: boolean;
+  onProjectChange?: (project: FontProject) => void;
+  saveStatus?: string;
+};
+
+export const FontBuilderWorkspace = ({
+  initialProject,
+  localPersistence = true,
+  onProjectChange,
+  saveStatus,
+}: FontBuilderWorkspaceProps) => {
   const [activeTab, setActiveTab] = useState<"build" | "write">("build");
-  const [project, setProject] = useState<FontProject>(createProject);
+  const [project, setProject] = useState<FontProject>(() => initialProject ?? createProject());
   const [activeCharacter, setActiveCharacter] = useState(CHARACTERS[0]);
   const [fontFamily, setFontFamily] = useState<string>();
   const [fontBuffer, setFontBuffer] = useState<ArrayBuffer>();
@@ -23,16 +35,17 @@ export const FontBuilderWorkspace = () => {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
-      setProject(loadProject());
+      if (localPersistence) setProject(loadProject());
       setHydrated(true);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [localPersistence]);
 
   useEffect(() => {
     if (!hydrated) return;
-    saveProject(project);
-  }, [hydrated, project]);
+    if (localPersistence) saveProject(project);
+    onProjectChange?.(project);
+  }, [hydrated, localPersistence, onProjectChange, project]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +113,7 @@ export const FontBuilderWorkspace = () => {
       >
         Skip to content
       </a>
-      <WorkspaceNavbar />
+      <WorkspaceNavbar saveStatus={saveStatus} />
       <main id="main-content" className="min-h-0 flex-1 overflow-hidden">
         <Tabs
           value={activeTab}
