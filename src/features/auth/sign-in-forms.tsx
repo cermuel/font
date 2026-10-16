@@ -2,6 +2,7 @@ import type { FormEvent } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOtp } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 
 type DetailsFormProps = {
@@ -24,13 +25,13 @@ export const SignInDetailsForm = ({
   <form className="space-y-4" onSubmit={onSubmit}>
     <Button
       type="button"
-      className="h-10 w-full"
+      className="hidden h-10 w-full"
       onClick={onGoogleSignIn}
     >
       <Image src="/google-logo.svg" alt="" width={16} height={16} />
       Continue with Google
     </Button>
-    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+    <div className="hidden items-center gap-3 text-xs text-muted-foreground">
       <span className="h-px flex-1 bg-border" />
       <span>OR</span>
       <span className="h-px flex-1 bg-border" />
@@ -45,6 +46,7 @@ export const SignInDetailsForm = ({
         placeholder="name@example.com"
         value={email}
         onChange={(event) => onEmailChange(event.target.value)}
+        aria-invalid={Boolean(error)}
         aria-describedby={error ? "auth-error" : undefined}
       />
     </div>
@@ -76,24 +78,14 @@ export const SignInCodeForm = ({
   onSubmit,
 }: CodeFormProps) => (
   <form className="space-y-4" onSubmit={onSubmit}>
-    <div className="space-y-2">
-      <Label htmlFor="auth-code">Sign-in code</Label>
-      <Input
-        id="auth-code"
-        name="code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        maxLength={6}
-        pattern="[0-9]{6}"
-        placeholder="123456"
-        value={code}
-        onChange={(event) =>
-          onCodeChange(event.target.value.replace(/\D/g, ""))
-        }
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? "auth-error" : undefined}
-      />
-    </div>
+    <InputOtp
+      label="Sign-in code"
+      value={code}
+      onChange={onCodeChange}
+      error={Boolean(error)}
+      describedBy={error ? "auth-error" : undefined}
+      disabled={pending}
+    />
     <Button type="submit" className="h-10 w-full" disabled={pending}>
       {pending ? "Signing in…" : "Verify and sign in"}
     </Button>

@@ -12,21 +12,43 @@ import {
 import { createCloudFont } from "@/features/font-library/font-api";
 import { AccountMenu } from "./account-menu";
 import { authClient } from "./auth-client";
-import { SignInModal } from "./sign-in-modal";
+import { SignInModal, type SignInStep } from "./sign-in-modal";
+
+const getSignInStep = (): SignInStep =>
+  new URLSearchParams(window.location.search).get("signIn") === "code" &&
+  window.sessionStorage.getItem("sign-in-email")
+    ? "code"
+    : "email";
+
+const replaceSignInParam = (step?: SignInStep) => {
+  const url = new URL(window.location.href);
+  if (step) url.searchParams.set("signIn", step);
+  else url.searchParams.delete("signIn");
+  window.history.replaceState(window.history.state, "", url);
+};
 
 export const AuthControls = () => {
   const { data: session, isPending, refetch } = authClient.useSession();
   const pathname = usePathname();
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
+  const [signInStep, setSignInStep] = useState<SignInStep>("email");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const migrationStarted = useRef(false);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("signIn") !== "1")
-      return;
-    const timer = window.setTimeout(() => setModalOpen(true), 0);
-    return () => window.clearTimeout(timer);
+    const syncFromUrl = () => {
+      const signIn = new URLSearchParams(window.location.search).get("signIn");
+      const step = getSignInStep();
+      if (signIn === "1" || (signIn === "code" && step === "email")) {
+        replaceSignInParam(step);
+      }
+      setModalOpen(signIn === "1" || signIn === "email" || signIn === "code");
+      setSignInStep(step);
+    };
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
   }, []);
 
   useEffect(() => {
@@ -56,8 +78,20 @@ export const AuthControls = () => {
   }, [pathname, router, session?.user]);
 
   const closeModal = () => {
+    replaceSignInParam();
     setModalOpen(false);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
+  };
+
+  const openModal = () => {
+    replaceSignInParam("email");
+    setSignInStep("email");
+    setModalOpen(true);
+  };
+
+  const changeSignInStep = (step: SignInStep) => {
+    replaceSignInParam(step);
+    setSignInStep(step);
   };
 
   if (isPending)
@@ -69,13 +103,15 @@ export const AuthControls = () => {
         <Button
           ref={triggerRef}
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={openModal}
         >
           Sign in<span className="hidden sm:inline"> to save</span>
         </Button>
         <SignInModal
           open={modalOpen}
+          step={signInStep}
           onClose={closeModal}
+          onStepChange={changeSignInStep}
           onSignedIn={() => {
             closeModal();
             void refetch();

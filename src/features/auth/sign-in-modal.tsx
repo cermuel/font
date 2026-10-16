@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -14,13 +8,25 @@ import { MorphingModal } from "@/components/motion/morphing-modal";
 import { Button } from "@/components/ui/button";
 import { authClient } from "./auth-client";
 import { SignInCodeForm, SignInDetailsForm } from "./sign-in-forms";
+import { useSignInModalFocus } from "./use-sign-in-modal-focus";
 import Image from "next/image";
 
 type SignInModalProps = {
   open: boolean;
+  step: SignInStep;
   onClose: () => void;
+  onStepChange: (step: SignInStep) => void;
   onSignedIn: () => void;
 };
+
+export type SignInStep = "email" | "code";
+
+const EMAIL_STORAGE_KEY = "sign-in-email";
+
+const getSavedEmail = () =>
+  typeof window === "undefined"
+    ? ""
+    : window.sessionStorage.getItem(EMAIL_STORAGE_KEY) ?? "";
 
 const readableError = (code?: string) => {
   if (code === "INVALID_OTP")
@@ -34,33 +40,19 @@ const readableError = (code?: string) => {
 
 export const SignInModal = ({
   open,
+  step,
   onClose,
+  onStepChange,
   onSignedIn,
 }: SignInModalProps) => {
-  const [view, setView] = useState<"details" | "code">("details");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(getSavedEmail);
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const timer = window.setTimeout(() =>
-      dialogRef.current?.querySelector<HTMLElement>("input")?.focus(),
-    );
-    return () => window.clearTimeout(timer);
-  }, [open, view]);
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose, open]);
+  const trapFocus = useSignInModalFocus({ dialogRef, onClose, open, step });
 
   useEffect(() => {
     if (!cooldown) return;
@@ -70,25 +62,6 @@ export const SignInModal = ({
     );
     return () => window.clearInterval(timer);
   }, [cooldown]);
-
-  const trapFocus = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Tab") return;
-    const focusable = [
-      ...(dialogRef.current?.querySelectorAll<HTMLElement>(
-        "button:not(:disabled), a[href], input:not(:disabled)",
-      ) ?? []),
-    ];
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable.at(-1);
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last?.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
 
   const sendCode = async (event?: FormEvent) => {
     event?.preventDefault();
@@ -101,13 +74,15 @@ export const SignInModal = ({
     });
     setPending(false);
     if (result.error) return setError(readableError(result.error.code));
-    setView("code");
+    window.sessionStorage.setItem(EMAIL_STORAGE_KEY, email.trim());
+    onStepChange("code");
     setCooldown(30);
   };
 
   const verifyCode = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
+    if (code.length !== 6) return setError("Enter the six-digit code.");
     setPending(true);
     const result = await authClient.signIn.emailOtp({
       email,
@@ -115,6 +90,7 @@ export const SignInModal = ({
     });
     setPending(false);
     if (result.error) return setError(readableError(result.error.code));
+    window.sessionStorage.removeItem(EMAIL_STORAGE_KEY);
     onSignedIn();
   };
 
@@ -126,9 +102,19 @@ export const SignInModal = ({
     });
   };
 
+  const changeEmail = (value: string) => {
+    setEmail(value);
+    if (error) setError("");
+  };
+
+  const changeCode = (value: string) => {
+    setCode(value);
+    if (error) setError("");
+  };
+
   return (
     <MorphingModal
-      viewId={open ? view : null}
+      viewId={open ? step : null}
       onClose={onClose}
       placement="center"
     >
@@ -140,6 +126,7 @@ export const SignInModal = ({
         aria-describedby="sign-in-description"
         onKeyDown={trapFocus}
       >
+        <h2 id="sign-in-title" className="sr-only">Sign in</h2>
         <div className="flex items-start justify-end">
           <Button
             type="button"
@@ -160,19 +147,22 @@ export const SignInModal = ({
             className="size-11 mx-auto rounded-md"
             priority
           />
-          <p id="sign-in-description" className="text-sm text-muted-foreground">
-            {view === "details"
+          <p
+            id="sign-in-description"
+            className={`text-sm text-muted-foreground ${step === "email" ? "hidden" : ""}`}
+          >
+            {step === "email"
               ? "Sign in to keep your fonts available across devices."
               : `We sent a six-digit code to ${email}.`}
           </p>
         </div>
 
-        {view === "details" ? (
+        {step === "email" ? (
           <SignInDetailsForm
             error={error}
             email={email}
             pending={pending}
-            onEmailChange={setEmail}
+            onEmailChange={changeEmail}
             onGoogleSignIn={signInWithGoogle}
             onSubmit={sendCode}
           />
@@ -183,10 +173,10 @@ export const SignInModal = ({
             error={error}
             pending={pending}
             onBack={() => {
-              setView("details");
+              onStepChange("email");
               setError("");
             }}
-            onCodeChange={setCode}
+            onCodeChange={changeCode}
             onResend={() => sendCode()}
             onSubmit={verifyCode}
           />

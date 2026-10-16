@@ -45,7 +45,8 @@ export const auth = betterAuth({
       otpLength: 6,
       expiresIn: 300,
       allowedAttempts: 3,
-      storeOTP: "hashed",
+      storeOTP: "encrypted",
+      resendStrategy: "reuse",
       rateLimit: { window: 60, max: 3 },
       sendVerificationOTP: async ({ email, otp, type }) => {
         if (type === "sign-in") await sendSignInCode(email, otp);
